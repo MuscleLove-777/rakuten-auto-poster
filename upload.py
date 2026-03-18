@@ -351,32 +351,151 @@ def build_blog_html(image_url, tags, file_path):
 # ============================================================
 
 def _rakuten_login(page):
-    """楽天ログイン処理（共通）"""
+    """楽天ログイン処理（共通） - 新SSOページ対応"""
     if 'grp' in page.url or 'login' in page.url.lower() or 'nid' in page.url:
         print("  Login required...")
+        print(f"  Login page URL: {page.url}")
+
+        # SPAの読み込みを待つ
+        time.sleep(3)
+        page.screenshot(path='debug_login_page.png')
+
+        # --- ユーザーID入力 ---
         try:
-            user_input = page.locator('input[type="text"]:visible, input[type="email"]:visible').first
+            # 新旧両方のセレクタを試す
+            user_selectors = [
+                'input[id="loginInner_u"]',           # 旧楽天ログイン
+                'input[name="u"]',                     # 旧楽天ログイン
+                'input[type="text"]:visible',
+                'input[type="email"]:visible',
+                'input[autocomplete="username"]:visible',
+                'input[id*="user"]:visible',
+                'input[id*="login"]:visible',
+                'input[name*="user"]:visible',
+                'input[name*="login"]:visible',
+                'input[placeholder*="ユーザ"]:visible',
+                'input[placeholder*="ID"]:visible',
+            ]
+            user_input = None
+            for sel in user_selectors:
+                try:
+                    loc = page.locator(sel).first
+                    if loc.is_visible(timeout=2000):
+                        user_input = loc
+                        print(f"  User ID input found: {sel}")
+                        break
+                except:
+                    continue
+
+            if user_input is None:
+                # フォールバック: 最初の見えるinputを使う
+                user_input = page.locator('input:visible').first
+                print("  User ID input: using first visible input")
+
+            user_input.click()
             user_input.fill(RAKUTEN_USER_ID)
             print(f"  User ID filled: {RAKUTEN_USER_ID[:3]}***")
             time.sleep(1)
-            page.locator('button:visible:has-text("次へ"), input[type="submit"]:visible').first.click()
-            print("  Next clicked")
-            time.sleep(3)
-        except Exception as e:
-            print(f"  User ID step: {e}")
+            page.screenshot(path='debug_after_userid.png')
 
+        except Exception as e:
+            print(f"  User ID step failed: {e}")
+            page.screenshot(path='debug_userid_error.png')
+
+        # --- 「次へ」ボタン or パスワードが同一画面 ---
         try:
-            pass_input = page.locator('input[type="password"]:visible').first
-            pass_input.wait_for(state='visible', timeout=10000)
-            pass_input.fill(RAKUTEN_PASSWORD)
-            print("  Password filled")
-            time.sleep(1)
-            page.locator('button:visible:has-text("ログイン"), input[type="submit"]:visible').first.click()
-            print("  Login clicked")
-            time.sleep(5)
-        except Exception as e:
-            print(f"  Password step: {e}")
+            next_selectors = [
+                'button:has-text("次へ")',
+                'input[type="submit"]',
+                'button[type="submit"]',
+                'button:has-text("Next")',
+                'button:has-text("ログイン")',
+                '[data-testid*="next"]',
+                '[data-testid*="submit"]',
+            ]
+            next_clicked = False
+            for sel in next_selectors:
+                try:
+                    btn = page.locator(sel).first
+                    if btn.is_visible(timeout=2000):
+                        btn.click()
+                        print(f"  Next/Submit clicked: {sel}")
+                        next_clicked = True
+                        time.sleep(3)
+                        break
+                except:
+                    continue
 
+            if not next_clicked:
+                # ボタンが見つからない場合、Enterキーで送信
+                print("  No next button found, trying Enter key")
+                page.keyboard.press('Enter')
+                time.sleep(3)
+
+            page.screenshot(path='debug_after_next.png')
+
+        except Exception as e:
+            print(f"  Next button step: {e}")
+
+        # --- パスワード入力 ---
+        try:
+            pass_selectors = [
+                'input[type="password"]:visible',
+                'input[autocomplete="current-password"]:visible',
+                'input[name*="pass"]:visible',
+                'input[id*="pass"]:visible',
+            ]
+            pass_input = None
+            for sel in pass_selectors:
+                try:
+                    loc = page.locator(sel).first
+                    if loc.is_visible(timeout=5000):
+                        pass_input = loc
+                        print(f"  Password input found: {sel}")
+                        break
+                except:
+                    continue
+
+            if pass_input:
+                pass_input.click()
+                pass_input.fill(RAKUTEN_PASSWORD)
+                print("  Password filled")
+                time.sleep(1)
+
+                # ログインボタン
+                login_selectors = [
+                    'button:has-text("ログイン")',
+                    'input[type="submit"]',
+                    'button[type="submit"]',
+                    'button:has-text("Login")',
+                    'button:has-text("Sign in")',
+                ]
+                login_clicked = False
+                for sel in login_selectors:
+                    try:
+                        btn = page.locator(sel).first
+                        if btn.is_visible(timeout=2000):
+                            btn.click()
+                            print(f"  Login clicked: {sel}")
+                            login_clicked = True
+                            break
+                    except:
+                        continue
+
+                if not login_clicked:
+                    print("  No login button found, trying Enter key")
+                    page.keyboard.press('Enter')
+
+                time.sleep(5)
+            else:
+                print("  WARNING: Password input not found!")
+                page.screenshot(path='debug_no_password.png')
+
+        except Exception as e:
+            print(f"  Password step failed: {e}")
+            page.screenshot(path='debug_password_error.png')
+
+        page.screenshot(path='debug_after_login.png')
         print(f"  After login: {page.url}")
     else:
         print("  Already logged in")
