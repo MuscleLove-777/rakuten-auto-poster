@@ -358,7 +358,10 @@ def _rakuten_login(page):
 
         # SPAの読み込みを待つ
         time.sleep(3)
-        page.screenshot(path='debug_login_page.png')
+        try:
+            page.screenshot(path='debug_login_page.png', timeout=10000)
+        except Exception:
+            pass
 
         # --- ユーザーID入力 ---
         try:
@@ -396,11 +399,17 @@ def _rakuten_login(page):
             user_input.fill(RAKUTEN_USER_ID)
             print(f"  User ID filled: {RAKUTEN_USER_ID[:3]}***")
             time.sleep(1)
-            page.screenshot(path='debug_after_userid.png')
+            try:
+                page.screenshot(path='debug_after_userid.png', timeout=10000)
+            except Exception:
+                pass
 
         except Exception as e:
             print(f"  User ID step failed: {e}")
-            page.screenshot(path='debug_userid_error.png')
+            try:
+                page.screenshot(path='debug_userid_error.png', timeout=10000)
+            except Exception:
+                pass
 
         # --- 「次へ」ボタン or パスワードが同一画面 ---
         try:
@@ -432,7 +441,10 @@ def _rakuten_login(page):
                 page.keyboard.press('Enter')
                 time.sleep(3)
 
-            page.screenshot(path='debug_after_next.png')
+            try:
+                page.screenshot(path='debug_after_next.png', timeout=10000)
+            except Exception:
+                pass
 
         except Exception as e:
             print(f"  Next button step: {e}")
@@ -489,13 +501,22 @@ def _rakuten_login(page):
                 time.sleep(5)
             else:
                 print("  WARNING: Password input not found!")
-                page.screenshot(path='debug_no_password.png')
+                try:
+                    page.screenshot(path='debug_no_password.png', timeout=10000)
+                except Exception:
+                    pass
 
         except Exception as e:
             print(f"  Password step failed: {e}")
-            page.screenshot(path='debug_password_error.png')
+            try:
+                page.screenshot(path='debug_password_error.png', timeout=10000)
+            except Exception:
+                pass
 
-        page.screenshot(path='debug_after_login.png')
+        try:
+            page.screenshot(path='debug_after_login.png', timeout=10000)
+        except Exception:
+            pass
         print(f"  After login: {page.url}")
     else:
         print("  Already logged in")
@@ -519,7 +540,10 @@ def upload_image_to_rakuten(page, image_path):
     try:
         page.locator('a.imgListUpload').first.click()
         time.sleep(3)
-        page.screenshot(path='debug_upload_modal.png')
+        try:
+            page.screenshot(path='debug_upload_modal.png', timeout=10000)
+        except Exception:
+            pass
 
         # colorbox内のファイル入力を探す
         file_input = page.locator('#cboxLoadedContent input[type="file"], input[type="file"]').first
@@ -649,7 +673,10 @@ def post_to_rakuten_blog(image_url, title, content_html):
 
             page.locator('#diary_write_d_title').wait_for(state='visible', timeout=10000)
             print(f"  Diary write page ready")
-            page.screenshot(path='debug_diarywrite.png')
+            try:
+                page.screenshot(path='debug_diarywrite.png', timeout=10000)
+            except Exception:
+                pass
 
             # ============================================
             # Step 2: タイトル入力
@@ -683,7 +710,10 @@ def post_to_rakuten_blog(image_url, title, content_html):
                 except Exception as e:
                     print(f"  Fallback also failed: {e}")
 
-            page.screenshot(path='debug_content.png')
+            try:
+                page.screenshot(path='debug_content.png', timeout=10000)
+            except Exception:
+                pass
 
             # ============================================
             # Step 4: 公開
@@ -715,14 +745,20 @@ def post_to_rakuten_blog(image_url, title, content_html):
             except Exception as e:
                 print(f"  Publish failed: {e}")
                 published = False
-                page.screenshot(path='debug_publish_error.png')
+                try:
+                    page.screenshot(path='debug_publish_error.png', timeout=10000)
+                except Exception:
+                    pass
 
             # ============================================
             # Step 5: 結果確認
             # ============================================
             final_url = page.url
             print(f"  Final URL: {final_url}")
-            page.screenshot(path='debug_final.png')
+            try:
+                page.screenshot(path='debug_final.png', timeout=10000)
+            except Exception:
+                pass
 
             # 公開完了ページのテキストで判定
             page_text = page.evaluate('() => document.body.innerText.substring(0, 500)')
@@ -750,7 +786,7 @@ def post_to_rakuten_blog(image_url, title, content_html):
         except Exception as e:
             print(f"Playwright error: {e}")
             try:
-                page.screenshot(path='debug_error.png')
+                page.screenshot(path='debug_error.png', timeout=10000)
             except Exception:
                 pass
             return None
